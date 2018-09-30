@@ -33,24 +33,36 @@ AudioConnection          patchCord5(waveformMod1, 0, i2s1, 1);
 AudioControlSGTL5000     sgtl5000_1;     //xy=336,538
 // GUItool: end automatically generated code
 
+constexpr float c_modRange = 8.0;
+// log(5)
+constexpr float c_factor = c_modRange * 0.69897000433601880478626110527551;
+constexpr float c_baseFreq = 220.0;
+
+float computeLevelFromExpectedPitch(const float expected, const float base) {
+  return log(expected / base) / c_factor;
+}
+
 void setup() {
   AudioMemory(16);
 
   sgtl5000_1.enable();
   sgtl5000_1.volume(0.25);
 
-  waveformMod1.begin(0.5, 220, WAVEFORM_SINE);
-  waveformMod1.frequencyModulation(1);
+  waveformMod1.begin(0.5, c_baseFreq, WAVEFORM_SINE);
+  waveformMod1.frequencyModulation(c_modRange);
 
   dc1.amplitude(1.0);
 }
 
 void loop() {
   if (Serial.available()) {
-    const String dcValueStr = Serial.readString();
-    const float dcValue = dcValueStr.toFloat();
-    Serial.println(dcValue);
-    dc1.amplitude(dcValue);
+    const String valueStr = Serial.readString();
+    const float value = valueStr.toFloat();
+    //Serial.println(value);
+    //dc1.amplitude(value);
+    const float level = computeLevelFromExpectedPitch(value, c_baseFreq);
+    Serial.println(level);
+    dc1.amplitude(level);
   }
 }
 
